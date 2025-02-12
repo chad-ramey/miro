@@ -1,0 +1,29 @@
+name: Miro License Monitor
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Runs daily at 6:00 AM UTC
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  monitor-licenses:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install required Python packages
+        run: pip install requests
+
+      - name: Run Miro License Monitor script
+        env:
+          MIRO_API_TOKEN: ${{ secrets.MIRO_API_TOKEN }}
+          MIRO_ORG_ID: ${{ secrets.MIRO_ORG_ID }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python miro_license_monitor.py
