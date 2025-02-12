@@ -2,58 +2,42 @@
 Script: miro_license_monitor - Monitor Miro License Usage and Send Alerts
 
 Description:
-This script monitors Miro license usage by fetching all organization members and the total allocated licenses using the Miro API.
-It dynamically retrieves the total number of procured licenses and compares it against the number of active users with a "full" license.
-Alerts are sent to a Slack channel if license usage exceeds the allocated amount.
+This script monitors Miro license usage by fetching all organization members using the Miro API.
+It filters active users with a "full" license and compares the count against a predefined total.
+Alerts are sent to a Slack channel if license usage exceeds the total allocated.
 
 Functions:
-- fetch_total_licenses: Retrieves the total number of procured licenses for the organization.
-- fetch_members: Fetches Miro organization members using API pagination.
+- fetch_members: Fetches Miro organization members with pagination.
 - post_to_slack: Sends a message to a Slack channel via webhook.
 - main: Main function to calculate license usage and send alerts.
 
 Usage:
 1. Set the following environment variables:
-   - `MIRO_API_TOKEN`: Miro API token with organization access.
+   - `MIRO_API_TOKEN`: Miro API token with org member access.
    - `MIRO_ORG_ID`: Miro Organization ID.
    - `SLACK_WEBHOOK_URL`: Webhook URL for Slack alerts.
 2. Run the script in a Python environment or via GitHub Actions.
 
 Notes:
-- Ensure the API token has the necessary permissions to fetch organization details and members.
-- The script no longer requires manually setting the total allocated licenses, as it retrieves them dynamically.
-- If license overages occur, immediate action is recommended to address them.
+- Ensure the API token and Organization ID are valid and have sufficient permissions.
+- Adjust the `total_licenses` variable to reflect your organization's license allocation.
 
 Author: Chad Ramey
-Updated: February 12, 2025
+Date: December 11, 2024
 """
 
 import os
 import requests
 
-def fetch_total_licenses(api_token, org_id):
+def fetch_members(api_token, org_id):
     """
-    Fetch total allocated licenses for the Miro organization.
+    Fetch members from the Miro organization using API pagination.
     Args:
         api_token (str): Miro API token.
         org_id (str): Miro Organization ID.
     Returns:
-        int: Total number of allocated full licenses.
+        list: List of member dictionaries.
     """
-    url = f"https://api.miro.com/v2/orgs/{org_id}"
-    headers = {
-        "Authorization": f"Bearer {api_token}",
-        "Accept": "application/json"
-    }
-
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    data = response.json()
-    
-    return data.get("fullLicensesPurchased", 0)  # Default to 0 if key is missing
-
-def fetch_members(api_token, org_id):
-    """Fetch members from the Miro organization using API pagination."""
     url = f"https://api.miro.com/v2/orgs/{org_id}/members"
     headers = {
         "Authorization": f"Bearer {api_token}",
@@ -89,12 +73,10 @@ def main():
     api_token = os.getenv("MIRO_API_TOKEN")
     org_id = os.getenv("MIRO_ORG_ID")
     slack_webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+    total_licenses = 1200  # Total allocated licenses
 
     if not api_token or not org_id or not slack_webhook_url:
         raise ValueError("Environment variables MIRO_API_TOKEN, MIRO_ORG_ID, and SLACK_WEBHOOK_URL are required.")
-
-    # Fetch total allocated licenses dynamically
-    total_licenses = fetch_total_licenses(api_token, org_id)
 
     # Fetch all organization members
     members = fetch_members(api_token, org_id)
